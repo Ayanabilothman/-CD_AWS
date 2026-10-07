@@ -19,27 +19,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: set up buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login in to Docker
         uses: docker/login-action@v3
         with:
           username: ${{secrets.DOCKERHUB_USERNAME}}
           password: ${{secrets.DOCKERHUB_TOKEN}}
 
-      - name: Build Image
-        run: |
-          docker build \
-            -f Dockerfile.prod \
-            -t ${{ secrets.DOCKERHUB_USERNAME }}/nestjs-app:latest \
-            -t ${{ secrets.DOCKERHUB_USERNAME }}/nestjs-app:${{github.sha}} .
+      - name: Build & Push Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.prod
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/nestjs-app:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/nestjs-app:${{github.event.workflow_run.head_sha}}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Push Image
-        run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nestjs-app:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nestjs-app:${{github.sha}}
-
-  #2 configs on AWS
-  prepare-configs:
-    name: copy configs & create .env
+  deploy:
+    name: config & deploy to EC2
     runs-on: ubuntu-latest
     needs: docker
     steps:
@@ -54,24 +56,7 @@ jobs:
           key: ${{secrets.EC2_PRIVATE_KEY}}
           source: 'docker-compose.yml,nginx/*'
           target: '/home/ubuntu/app'
-          stripe_components: 0
 
-      - name: create env file
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{secrets.EC2_HOST}}
-          username: ${{secrets.EC2_USERNAME}}
-          key: ${{secrets.EC2_PRIVATE_KEY}}
-          script: |
-            echo "MONGO_URI=${{secrets.MONGO_URI}}" > /home/ubuntu/app/.env
-            echo "PORT=${{secrets.PORT}}" >> /home/ubuntu/app/.env
-
-  #3 deploy
-  deploy:
-    name: Deploy to EC2
-    runs-on: ubuntu-latest
-    needs: prepare-configs
-    steps:
       - name: deploy through ssh
         uses: appleboy/ssh-action@v1
         with:
@@ -80,6 +65,12 @@ jobs:
           key: ${{secrets.EC2_PRIVATE_KEY}}
           script: |
             cd '/home/ubuntu/app'
+
+            cat << 'EOF' > .env
+            MONGO_URI=${{secrets.MONGO_URI}}
+            PORT=${{secrets.PORT}}
+            EOF
+
             sudo docker compose pull
             sudo docker compose up -d
             sudo docker image prune -af
