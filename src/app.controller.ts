@@ -7,7 +7,7 @@ export class AppController {
 
   @Get('/hi')
   Hello() {
-    return 'Hello from CICD Github Actions!';
+    return 'Hello from CICD AWS EC2!';
   }
 
   @Get()
