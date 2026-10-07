@@ -1,0 +1,42 @@
+# Docker (Laptop)
+# Empty BOX
+# layers
+####### 1st stage #############################################33
+FROM node:24-alpine AS builder
+
+# new folder
+WORKDIR /app
+
+COPY package*.json ./
+
+# node_modules
+RUN npm ci
+
+# src(Local Machine) --> dest(Docker Container "/app")
+COPY . .
+# copy all the code except node_modules
+
+# build (TS --> JS) dest
+RUN npm run build
+#### 1st stage #############################################
+
+#### 2nd stage: Production stage #############################################
+FROM node:24-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY package*.json ./
+
+# install all packages except dev
+RUN npm i --omit=dev
+
+COPY --from=builder /app/dist ./dist
+
+CMD ["node", "dist/main.js"] 
+# search node dist/main.js VS npm run start
+#### 2nd stage: Production stage #############################################
+
+
+
