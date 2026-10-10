@@ -95,4 +95,11 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Copyright © 2026 Aya Nabil Othman. All rights reserved.
+
+This repository is provided for educational and demonstration purposes only.
+
+You may view, clone, and run the code for personal learning.
+
+You may not copy, redistribute, republish, sublicense, or use this code or substantial portions of it in commercial products, paid courses, tutorials, training programs, workshops, or other paid content without prior written permission.
+
