@@ -1,0 +1,35 @@
+# Manage Many Containers
+services:
+  # 1 app
+  app:
+    restart: always
+    image: ayaothman/nestjs-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: app
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    expose:
+      - '3000'
+    networks:
+      - webnet
+
+  # 2 Nginx
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    ports:
+      - '80:80'
+    depends_on:
+      - app
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - webnet
+
+networks:
+  webnet:
